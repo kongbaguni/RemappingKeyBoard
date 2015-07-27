@@ -21,16 +21,21 @@ public:
     CREATE_FUNC(Board);
     virtual void addChild(Node * child);
 protected:
+    
+    typedef enum
+    {
+        AC_MOVE  = 123,
+    }actionTag;
     Board();
     virtual ~Board();
     virtual bool init();
+
     
     
     virtual void onTouchesBegan(const std::vector<Touch*>& touches, Event *unused_event);
     virtual void onTouchesMoved(const std::vector<Touch*>& touches, Event *unused_event);
     virtual void onTouchesEnded(const std::vector<Touch*>& touches, Event *unused_event);
     virtual void onTouchesCancelled(const std::vector<Touch*>&touches, Event *unused_event);
-
     
     void sortItems();
     
@@ -41,6 +46,8 @@ private:
     Vector<Item*> _itemList;
     void itemZindexUp(Node* sender);
     void itemZindexDown(Node* sender);
+    
+    bool itemMoveTo(Item* item, Vec2 pos);
 };
 
 #endif /* defined(__Remapping__Board__) */

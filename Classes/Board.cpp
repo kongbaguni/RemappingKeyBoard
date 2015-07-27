@@ -133,40 +133,11 @@ void Board::onTouchesEnded(const std::vector<Touch *> &touches, cocos2d::Event *
                 {
                     auto pos1 = obj->getPosition();
                     auto pos2 = _pSelectNode->getPosition();
-                    _pSelectNode->runAction
-                    (
-                     Sequence::create
-                     (
-                      CallFuncN::create(CC_CALLBACK_1(Board::itemZindexUp, this)),
-                      EaseExponentialInOut::create(MoveTo::create(2.0f, pos1)),
-                      CallFuncN::create(CC_CALLBACK_1(Board::itemZindexDown, this)),
-                      NULL
-                      )
-                     );
-                    _pSelectNode->runAction
-                    (Sequence::create
-                     (EaseExponentialIn::create(ScaleTo::create(0.5f, 1.5f)),
-                      DelayTime::create(1.0f),
-                      EaseExponentialOut::create(ScaleTo::create(0.5f, 1.0f)),
-                      NULL));
-                    
-                    obj->runAction
-                    (
-                     Sequence::create
-                     (
-                      CallFuncN::create(CC_CALLBACK_1(Board::itemZindexUp, this)),
-                      EaseExponentialInOut::create(MoveTo::create(2.0f, pos2)),
-                      CallFuncN::create(CC_CALLBACK_1(Board::itemZindexDown, this)),
-                      NULL
-                     )
-                     );
-                    obj->runAction
-                    (Sequence::create
-                     (EaseExponentialIn::create(ScaleTo::create(0.5f, 1.5f)),
-                      DelayTime::create(1.0f),
-                      EaseExponentialOut::create(ScaleTo::create(0.5f, 1.0f)),
-                      NULL));
-                    
+                    if (itemMoveTo((Item*)obj, pos2))
+                    {
+                        itemMoveTo(_pSelectNode, pos1);
+                    }
+
                     _itemList.swap((Item*)obj, (Item*)_pSelectNode);
                 }
                 obj->setColor(Color3B::WHITE);
@@ -177,6 +148,36 @@ void Board::onTouchesEnded(const std::vector<Touch *> &touches, cocos2d::Event *
         CC_SAFE_RELEASE_NULL(_pShadowItem);
     }
 
+}
+
+bool Board::itemMoveTo(Item *item, cocos2d::Vec2 pos)
+{
+    
+    if (item->getActionByTag(AC_MOVE))
+    {
+        return false;
+    }
+    
+    auto action =
+    Spawn::create
+    (
+     Sequence::create
+     (
+      CallFuncN::create(CC_CALLBACK_1(Board::itemZindexUp, this)),
+      EaseExponentialInOut::create(MoveTo::create(2.0f, pos)),
+      CallFuncN::create(CC_CALLBACK_1(Board::itemZindexDown, this)),
+      NULL
+      ),
+     Sequence::create
+     (EaseExponentialIn::create(ScaleTo::create(0.5f, 1.5f)),
+      DelayTime::create(1.0f),
+      EaseExponentialOut::create(ScaleTo::create(0.5f, 1.0f)),
+      NULL),
+     NULL
+     );
+    action->setTag(AC_MOVE);
+    item->runAction(action);
+    return true;
 }
 void Board::onTouchesCancelled(const std::vector<Touch *> &touches, cocos2d::Event *unused_event)
 {
