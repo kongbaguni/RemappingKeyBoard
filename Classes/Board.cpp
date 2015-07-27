@@ -11,14 +11,18 @@ Board::Board():
 _pSelectNode(nullptr)
 {
     _posList.clear();
-    for (int i=4 ; i>0; i--)
+    for (int k = 3; k >= 0; k--)
     {
-        float y = i*16;
-        for (int j=1; j<13; j++)
+        for (int i=4 ; i>0; i--)
         {
-            float x = j*32;
-            _posList.push_back(Vec2(x, y));
+            float y = i*16 + k*16*5;
+            for (int j=1; j<13; j++)
+            {
+                float x = j*32;
+                _posList.push_back(Vec2(x, y));
+            }
         }
+        
     }
 }
 Board::~Board()
