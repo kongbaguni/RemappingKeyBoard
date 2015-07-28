@@ -17,10 +17,15 @@ class Item : public Sprite
     
 public:
     static Item* create(std::string strValue);
+    std::string getStringValue();
+    void setStringValueWithColorChange(std::string strValue);
+    
 protected:
     Item();
     virtual ~Item();
     virtual bool init(std::string strValue);
-    CC_SYNTHESIZE_READONLY(std::string, _stringValue, StringValue);
+    CC_SYNTHESIZE_RETAIN(Label*, _pLabel, Label);
+    
+    void colorChange();
 };
 #endif /* defined(__Remapping__Item__) */
