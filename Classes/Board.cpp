@@ -7,6 +7,9 @@
 //
 
 #include "Board.h"
+#include <iostream>
+#include <fstream>
+
 Board::Board():
 _pSelectItem(nullptr),
 _pShadowItem(nullptr),
@@ -373,7 +376,7 @@ void Board::writeMappingFile()
                 result.append(_itemList.at(index)->getStringValue());
                 if (k<11)
                 {
-                    result.append(",\t");
+                    result.append(", ");
                 }
                 index++;
             }
@@ -383,5 +386,11 @@ void Board::writeMappingFile()
         index2++;
     }
     
-    log("%s",result.c_str());
+    
+    auto path = FileUtils::getInstance()->getWritablePath();
+    
+    std::ofstream file;
+    file.open(path+"/output.txt", std::ios::out);
+    file<< result;
+    file.close();
 }
