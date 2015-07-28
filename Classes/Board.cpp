@@ -395,44 +395,40 @@ void Board::writeMappingFile()
     int index = 0;
     int index2 = 0;
     
-    jsonResult.append("[");
+    //output string make
+    
     for (int i=0; i<4; i++)
     {
         result.append(StringUtils::format("\n[%d] = {",index2));
-        jsonResult.append("[");
         for (int j=0; j<4; j++)
         {
             result.append("\n {");
-            jsonResult.append("[");
             for (int k=0; k<12; k++)
             {
                 auto stringValue = _itemList.at(index)->getStringValue();
                 
                 result.append(stringValue);
-                jsonResult.append("\""+stringValue+"\"");
                 if (k<11)
                 {
                     result.append(", ");
-                    jsonResult.append(",");
                 }
                 index++;
             }
             result.append("}");
-            jsonResult.append("]");
-            if (j<3)
-            {
-                jsonResult.append(",");
-            }
         }
         result.append("\n},");
-        jsonResult.append("]");
-        if (i<3)
-        {
-            jsonResult.append(",");
-        }
         index2++;
     }
-    jsonResult.append("]");
+    
+    //json string make
+    
+    jsonResult.append("[");
+    for (auto item :  _itemList)
+    {
+        auto stringValue ="\""+item->getStringValue()+"\",";
+        jsonResult.append(stringValue);
+    }
+    jsonResult.append("\" \"]");
     
     
     //file output

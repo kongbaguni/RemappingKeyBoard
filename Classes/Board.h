@@ -57,9 +57,13 @@ protected:
 
 private:
     void menuCallBack(Ref* sender);
+    /** Selected Item on Touch */
     Item* _pSelectItem;
+    
     Item* _pShadowItem;
+    
     Menu* _pMenu;
+    
     /** 아이템 위치값 리스트*/
     std::vector<Vec2> _posList;
     /** 최초 설정된 키 스트링 값 목록 */

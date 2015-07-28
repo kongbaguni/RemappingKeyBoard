@@ -9,6 +9,7 @@
 #include "MainScene.h"
 #include "Board.h"
 #include "Item.h"
+#include <json/document.h>
 
 MainScene::MainScene()
 {
@@ -68,14 +69,43 @@ bool MainScene::init()
             "KC_TRNS",     "KC_TRNS",    "KC_TRNS",    "KC_TRNS",                "FUNC(2)",    "KC_BSPC",     "KC_BSPC",     "KC_TRNS",      "KC_MNXT",    "KC_VOLD",    "KC_VOLU",    "KC_MPLY",
 
         };
+    
+    //load save.json
+    {
+        auto filePath = FileUtils::getInstance()->getWritablePath()+"/save.json";
+        bool bFileExist = FileUtils::getInstance()->isFileExist(filePath);
+        if(bFileExist)
+        {
+            auto data = FileUtils::getInstance()->getStringFromFile(filePath);
+            rapidjson::Document document;
+            document.Parse(data.c_str());
+            if(!document.HasParseError() && document.IsArray())
+            {
+                for(int i=0; i<document.Size(); i++)
+                {
+                    std::string str = document[i].GetString();
+                    if(str.compare(" ")!=0)
+                    {
+                        board->addChild(Item::create(str));
+                    }
+                }
+                
+            }
+        }
+        else
+        {
+            for (int i=0; i<sizeof(buttonList)/sizeof(std::string); i++)
+            {
+                board->addChild(Item::create(buttonList[i]));
+            }
+            for (int i=0; i<32; i++)
+            {
+                board->addChild(Item::create("KC_TRNS"));
+            }
+            
+        }
         
-    for (int i=0; i<sizeof(buttonList)/sizeof(std::string); i++)
-    {
-        board->addChild(Item::create(buttonList[i]));
     }
-    for (int i=0; i<32; i++)
-    {
-        board->addChild(Item::create("KC_TRNS"));
-    }
+        
     return true;
 }
