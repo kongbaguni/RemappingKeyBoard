@@ -25,6 +25,7 @@ protected:
     typedef enum
     {
         AC_MOVE  = 123,
+        AC_ROTATE3D 
     }actionTag;
     
     enum class menuTag

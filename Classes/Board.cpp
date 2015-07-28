@@ -178,13 +178,19 @@ void Board::onTouchesEnded(const std::vector<Touch *> &touches, cocos2d::Event *
                     {
                         case mode::MOVE:
                         {
-                            auto pos1 = obj->getPosition();
-                            auto pos2 = _pSelectItem->getPosition();
-                            if (itemMoveTo((Item*)obj, pos2))
+                            bool bItem1 = _itemList.find((Item*)obj) != _itemList.end();
+                            bool bItem2 = _itemList.find(_pSelectItem) != _itemList.end();
+                            if (bItem1 & bItem2)
                             {
-                                itemMoveTo(_pSelectItem, pos1);
-                                getChildren().swap(obj, _pSelectItem);
-                                _itemList.swap((Item*)obj, (Item*)_pSelectItem);
+                                auto pos1 = obj->getPosition();
+                                auto pos2 = _pSelectItem->getPosition();
+                                if (itemMoveTo((Item*)obj, pos2))
+                                {
+                                    itemMoveTo(_pSelectItem, pos1);
+                                    getChildren().swap(obj, _pSelectItem);
+                                    
+                                    _itemList.swap((Item*)obj, (Item*)_pSelectItem);
+                                }
                             }
 
                         }
@@ -218,15 +224,31 @@ void Board::selectItem(Item *item)
 }
 void Board::selectItem(Item *item, cocos2d::Vec2 selectPos)
 {
+    if (item->getActionByTag(AC_MOVE))
+    {
+        return;
+    }
     item->setColor(Color3B::RED);
     _pSelectItem = item;
     if (_pSelectItem->getStringValue().length()>0)
     {
         _pShadowItem = Item::create(_pSelectItem    ->getStringValue());
         _pShadowItem->setPosition(selectPos);
-        _pShadowItem->setOpacity(100);
+        _pShadowItem->setOpacity(220);
         _pShadowItem->retain();
         _pShadowItem->setLocalZOrder(10);
+        auto action = RepeatForever::create
+        (
+         Sequence::create
+         (EaseBounceIn::create(RotateTo::create(1.0f, Vec3(0, 0, 10))),
+          DelayTime::create(0.5f),
+          EaseBounceIn::create(RotateTo::create(1.0f, Vec3(0, 0, -10))),
+          DelayTime::create(0.5f),
+          NULL)
+        );
+        action->setTag(AC_ROTATE3D);
+        _pSelectItem->stopAllActions();
+        _pSelectItem->runAction(action);
         addChild(_pShadowItem);
         
     }
@@ -234,8 +256,13 @@ void Board::selectItem(Item *item, cocos2d::Vec2 selectPos)
 }
 void Board::unSelectItem()
 {
-    _pSelectItem->setColor(Color3B::WHITE);
-    _pSelectItem = nullptr;
+    if (_pSelectItem)
+    {
+        _pSelectItem->setColor(Color3B::WHITE);
+        _pSelectItem->setRotation3D(Vec3::ZERO);
+        _pSelectItem->stopActionByTag(AC_ROTATE3D);
+        _pSelectItem = nullptr;
+    }
     if (_pShadowItem)
     {
         removeChild(_pShadowItem);
