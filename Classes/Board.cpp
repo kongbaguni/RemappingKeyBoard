@@ -8,7 +8,9 @@
 
 #include "Board.h"
 Board::Board():
-_pSelectNode(nullptr)
+_pSelectNode(nullptr),
+_pShadowItem(nullptr),
+_pMenu(nullptr)
 {
     _posList.clear();
     for (int k = 3; k >= 0; k--)
@@ -22,11 +24,24 @@ _pSelectNode(nullptr)
                 _posList.push_back(Vec2(x, y));
             }
         }
-        
+    }
+    
+    for (int i=1; i>=0; i--)
+    {
+        float x = 420+32*i;
+        for (int j=7; j>=0; j--)
+        {
+            float y = j*16+192;
+            _posList.push_back(Vec2(x, y));
+            
+        }
     }
 }
 Board::~Board()
 {
+    CC_SAFE_RELEASE_NULL(_pShadowItem);
+    CC_SAFE_RELEASE_NULL(_pSelectNode);
+    CC_SAFE_RELEASE_NULL(_pMenu);
     
 }
 
@@ -51,20 +66,45 @@ bool Board::init()
         dispatcher->addEventListenerWithSceneGraphPriority(listener, this);
     }
     
+    
+
+
     return true;
 }
 
+void Board::onEnter()
+{
+    LayerColor::onEnter();
+    showMenu();
+}
 void Board::sortItems()
 {
 }
 
+void Board::showMenu()
+{
+    if (_pMenu==nullptr && getParent())
+    {
+        //메뉴 아이템 초기화
+        {
+            auto callBack = CC_CALLBACK_1(Board::menuCallBack, this);
+            auto resetBtn =
+            MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "reset"), callBack);
+            resetBtn->setTag((int)menuTag::RESET);
+            
+            _pMenu = Menu::create(resetBtn, NULL);
+            Node::addChild(_pMenu,10,10);
+        }
+    }
+    
+}
 void Board::onTouchesBegan(const std::vector<Touch *> &touches, cocos2d::Event *unused_event)
 {
     for (auto touch : touches)
     {
         for (auto obj : getChildren())
         {
-            if (obj == nullptr || obj->getParent() == nullptr )
+            if (obj == nullptr || obj->getParent() == nullptr  || obj == _pMenu)
             {
                 continue;
             }
@@ -73,23 +113,12 @@ void Board::onTouchesBegan(const std::vector<Touch *> &touches, cocos2d::Event *
             obj->setColor(Color3B::WHITE);
             if (bContains)
             {
-                obj->setColor(Color3B::RED);
-                _pSelectNode = (Item*)obj;
-                if (_pSelectNode->getStringValue().length()>0)
-                {
-                    _pShadowItem = Item::create(_pSelectNode    ->getStringValue());
-                    _pShadowItem->setPosition(touch->getLocation());
-                    _pShadowItem->setOpacity(100);
-                    _pShadowItem->retain();
-                    _pShadowItem->setLocalZOrder(10);
-                    addChild(_pShadowItem);
-                    
-                }
-                
+                selectItem((Item*)obj, touch->getLocation());
             }
         }
     }
 }
+
 void Board::onTouchesMoved(const std::vector<Touch *> &touches, cocos2d::Event *unused_event)
 {
     for (auto touch : touches)
@@ -100,7 +129,7 @@ void Board::onTouchesMoved(const std::vector<Touch *> &touches, cocos2d::Event *
         }
         for (auto obj : getChildren())
         {
-            if (obj != _pShadowItem )
+            if (obj != _pShadowItem && _pShadowItem )
             {
                 bool bContgaines = obj->getBoundingBox().containsPoint(_pShadowItem->getPosition());
                 if (bContgaines)
@@ -136,24 +165,56 @@ void Board::onTouchesEnded(const std::vector<Touch *> &touches, cocos2d::Event *
                     if (itemMoveTo((Item*)obj, pos2))
                     {
                         itemMoveTo(_pSelectNode, pos1);
+                        getChildren().swap(obj, _pSelectNode);
+                        _itemList.swap((Item*)obj, (Item*)_pSelectNode);
                     }
 
-                    _itemList.swap((Item*)obj, (Item*)_pSelectNode);
                 }
                 obj->setColor(Color3B::WHITE);
                 
             }
         }
-        removeChild(_pShadowItem);
-        CC_SAFE_RELEASE_NULL(_pShadowItem);
+        unSelectItem();
     }
 
 }
 
+
+void Board::selectItem(Item *item)
+{
+    selectItem(item, item->getPosition());
+}
+void Board::selectItem(Item *item, cocos2d::Vec2 selectPos)
+{
+    item->setColor(Color3B::RED);
+    _pSelectNode = item;
+    if (_pSelectNode->getStringValue().length()>0)
+    {
+        _pShadowItem = Item::create(_pSelectNode    ->getStringValue());
+        _pShadowItem->setPosition(selectPos);
+        _pShadowItem->setOpacity(100);
+        _pShadowItem->retain();
+        _pShadowItem->setLocalZOrder(10);
+        addChild(_pShadowItem);
+        
+    }
+    
+}
+void Board::unSelectItem()
+{
+    _pSelectNode->setColor(Color3B::WHITE);
+    _pSelectNode = nullptr;
+    if (_pShadowItem)
+    {
+        removeChild(_pShadowItem);
+    }
+    CC_SAFE_RELEASE_NULL(_pSelectNode);
+    writeMappingFile();
+}
 bool Board::itemMoveTo(Item *item, cocos2d::Vec2 pos)
 {
     
-    if (item->getActionByTag(AC_MOVE))
+    if (item->getActionByTag(AC_MOVE) || (Node*)item == _pMenu)
     {
         return false;
     }
@@ -203,9 +264,74 @@ void Board::addChild(cocos2d::Node *child)
 
 void Board::itemZindexUp(cocos2d::Node *sender)
 {
-    sender->setLocalZOrder(100);
+//    sender->setLocalZOrder(100);
 }
 void Board::itemZindexDown(cocos2d::Node *sender)
 {
-    sender->setLocalZOrder(0);
+//    sender->setLocalZOrder(0);
+}
+
+
+void Board::resetItemPosition()
+{
+    selectItem(_itemList.at(0));
+    unSelectItem();
+    _itemList.clear();
+    for (int i=0; i<getChildrenCount(); i++)
+    {
+        auto node = getChildren().at(i);
+        if ( node == _pMenu)
+        {
+            continue;
+        }
+        Item* item = (Item*)getChildren().at(i);
+        item->stopAllActions();
+        itemMoveTo(item, _posList.at(i));
+        _itemList.pushBack(item);
+    }
+    
+}
+
+void Board::menuCallBack(cocos2d::Ref *sender)
+{
+    menuTag tag = (menuTag)((Node*)sender)->getTag();
+    switch (tag) {
+        case menuTag::RESET:
+            resetItemPosition();
+            runAction(Sequence::create(DelayTime::create(0.2f),CallFunc::create(CC_CALLBACK_0(Board::resetItemPosition, this)), NULL));
+            break;
+        default:
+            break;
+    }
+}
+
+
+void Board::writeMappingFile()
+{
+    std::string result = "";
+    int index = 0;
+    int index2 = 0;
+    
+    for (int i=0; i<4; i++)
+    {
+        result.append(StringUtils::format("\n[%d] = {",index2));
+        for (int j=0; j<4; j++)
+        {
+            result.append("\n {");
+            for (int k=0; k<12; k++)
+            {
+                result.append(_itemList.at(index)->getStringValue());
+                if (k<11)
+                {
+                    result.append(",\t");                    
+                }
+                index++;
+            }
+            result.append("}");
+        }
+        result.append("\n},");
+        index2++;
+    }
+    
+    log("%s",result.c_str());
 }

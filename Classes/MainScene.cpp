@@ -73,5 +73,9 @@ bool MainScene::init()
     {
         board->addChild(Item::create(buttonList[i]));
     }
+    for (int i=0; i<16; i++)
+    {
+        board->addChild(Item::create("KC_TRNS"));
+    }
     return true;
 }
