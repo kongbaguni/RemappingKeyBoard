@@ -7,13 +7,15 @@
 //
 
 #include "Item.h"
-Item::Item()
+Item::Item():
+_pLabel(nullptr)
 {
     
 }
 
 Item::~Item()
 {
+    CC_SAFE_RELEASE_NULL(_pLabel);
     
 }
 
@@ -38,25 +40,42 @@ bool Item::init(std::string strValue)
         return false;
     }
     
-    _stringValue=strValue;
     
     auto label = Label::createWithBMFont("fonts/bmfont.fnt",strValue);
-    label->setColor(Color3B::BLUE);
     label->setPosition(getContentSize()*0.5f);
-    label->setScale(1.6f/strValue.size()+0.2f);
+
+    addChild(label);
+    setLabel(label);
+    colorChange();
+    return true;
+}
+
+std::string Item::getStringValue()
+{
+    return _pLabel->getString();
+}
+
+void Item::colorChange()
+{
+    auto strValue = _pLabel->getString();
+    _pLabel->setScale(1.6f/strValue.size()+0.2f);
+    _pLabel->setColor(Color3B::BLUE);
     if (strValue.compare("KC_TRNS")==0)
     {
-        label->setColor(Color3B::WHITE);
+        _pLabel->setColor(Color3B::WHITE);
     }
     else if (strValue.compare("FUNC(2)")==0 || strValue.compare("FUNC(1)")==0)
     {
-        label->setColor(Color3B::RED);
+        _pLabel->setColor(Color3B::RED);
     }
     else if (strValue.size()<=4)
     {
-        label->setColor(Color3B::YELLOW);
+        _pLabel->setColor(Color3B::YELLOW);
     }
-    addChild(label);
-    
-    return true;
+}
+
+void Item::setStringValueWithColorChange(std::string strValue)
+{
+    _pLabel->setString(strValue);
+    colorChange();
 }

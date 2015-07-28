@@ -19,7 +19,7 @@ class Board : public LayerColor
     
 public:
     CREATE_FUNC(Board);
-    virtual void addChild(Node * child);
+    virtual void addChild(Item * child);
 protected:
     
     typedef enum
@@ -30,7 +30,15 @@ protected:
     enum class menuTag
     {
         RESET,
+        COPY_OR_MOVE_TOGGLE
     };
+    
+    enum class mode
+    {
+        MOVE,
+        COPY
+    };
+    mode _eMode;
 
     Board();
     virtual ~Board();
@@ -48,10 +56,14 @@ protected:
 
 private:
     void menuCallBack(Ref* sender);
-    Item* _pSelectNode;
+    Item* _pSelectItem;
     Item* _pShadowItem;
     Menu* _pMenu;
+    /** 아이템 위치값 리스트*/
     std::vector<Vec2> _posList;
+    /** 최초 설정된 키 스트링 값 목록 */
+    std::vector<std::string> _stringList;
+    
     Vector<Item*> _itemList;
     void itemZindexUp(Node* sender);
     void itemZindexDown(Node* sender);

@@ -8,9 +8,10 @@
 
 #include "Board.h"
 Board::Board():
-_pSelectNode(nullptr),
+_pSelectItem(nullptr),
 _pShadowItem(nullptr),
-_pMenu(nullptr)
+_pMenu(nullptr),
+_eMode(mode::MOVE)
 {
     _posList.clear();
     for (int k = 3; k >= 0; k--)
@@ -36,11 +37,13 @@ _pMenu(nullptr)
             
         }
     }
+    _stringList.clear();
+    
 }
 Board::~Board()
 {
     CC_SAFE_RELEASE_NULL(_pShadowItem);
-    CC_SAFE_RELEASE_NULL(_pSelectNode);
+    CC_SAFE_RELEASE_NULL(_pSelectItem);
     CC_SAFE_RELEASE_NULL(_pMenu);
     
 }
@@ -92,7 +95,15 @@ void Board::showMenu()
             MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "reset"), callBack);
             resetBtn->setTag((int)menuTag::RESET);
             
-            _pMenu = Menu::create(resetBtn, NULL);
+            auto copyBtn = MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "copy"), callBack);
+            auto moveBtm = MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "move"), callBack);
+            
+            auto copyMoveToggle = MenuItemToggle::createWithCallback(callBack, moveBtm, copyBtn, NULL);
+            copyMoveToggle->setTag((int)menuTag::COPY_OR_MOVE_TOGGLE);
+            
+            
+            _pMenu = Menu::create(resetBtn, copyMoveToggle, NULL);
+            _pMenu->alignItemsHorizontally();
             Node::addChild(_pMenu,10,10);
         }
     }
@@ -138,7 +149,7 @@ void Board::onTouchesMoved(const std::vector<Touch *> &touches, cocos2d::Event *
                 }
                 else
                 {
-                    if (obj!=_pSelectNode)
+                    if (obj!=_pSelectItem)
                     {
                         obj->setColor(Color3B::WHITE);
                     }
@@ -151,7 +162,7 @@ void Board::onTouchesMoved(const std::vector<Touch *> &touches, cocos2d::Event *
 }
 void Board::onTouchesEnded(const std::vector<Touch *> &touches, cocos2d::Event *unused_event)
 {
-    if (_pShadowItem)
+    if (_pShadowItem && _pSelectItem)
     {
         for (auto obj : getChildren())
         {
@@ -160,13 +171,31 @@ void Board::onTouchesEnded(const std::vector<Touch *> &touches, cocos2d::Event *
                 bool bContgaines = obj->getBoundingBox().containsPoint(_pShadowItem->getPosition());
                 if (bContgaines)
                 {
-                    auto pos1 = obj->getPosition();
-                    auto pos2 = _pSelectNode->getPosition();
-                    if (itemMoveTo((Item*)obj, pos2))
+                    switch (_eMode)
                     {
-                        itemMoveTo(_pSelectNode, pos1);
-                        getChildren().swap(obj, _pSelectNode);
-                        _itemList.swap((Item*)obj, (Item*)_pSelectNode);
+                        case mode::MOVE:
+                        {
+                            auto pos1 = obj->getPosition();
+                            auto pos2 = _pSelectItem->getPosition();
+                            if (itemMoveTo((Item*)obj, pos2))
+                            {
+                                itemMoveTo(_pSelectItem, pos1);
+                                getChildren().swap(obj, _pSelectItem);
+                                _itemList.swap((Item*)obj, (Item*)_pSelectItem);
+                            }
+
+                        }
+                            break;
+                        case mode::COPY:
+                        {
+                            if (obj!=_pMenu)
+                            {
+                                auto item = (Item*)obj;
+                                item->setStringValueWithColorChange(_pSelectItem->getStringValue());
+                            }
+                        }
+                        default:
+                            break;
                     }
 
                 }
@@ -187,10 +216,10 @@ void Board::selectItem(Item *item)
 void Board::selectItem(Item *item, cocos2d::Vec2 selectPos)
 {
     item->setColor(Color3B::RED);
-    _pSelectNode = item;
-    if (_pSelectNode->getStringValue().length()>0)
+    _pSelectItem = item;
+    if (_pSelectItem->getStringValue().length()>0)
     {
-        _pShadowItem = Item::create(_pSelectNode    ->getStringValue());
+        _pShadowItem = Item::create(_pSelectItem    ->getStringValue());
         _pShadowItem->setPosition(selectPos);
         _pShadowItem->setOpacity(100);
         _pShadowItem->retain();
@@ -202,13 +231,13 @@ void Board::selectItem(Item *item, cocos2d::Vec2 selectPos)
 }
 void Board::unSelectItem()
 {
-    _pSelectNode->setColor(Color3B::WHITE);
-    _pSelectNode = nullptr;
+    _pSelectItem->setColor(Color3B::WHITE);
+    _pSelectItem = nullptr;
     if (_pShadowItem)
     {
         removeChild(_pShadowItem);
     }
-    CC_SAFE_RELEASE_NULL(_pSelectNode);
+    CC_SAFE_RELEASE_NULL(_pSelectItem);
     writeMappingFile();
 }
 bool Board::itemMoveTo(Item *item, cocos2d::Vec2 pos)
@@ -245,7 +274,7 @@ void Board::onTouchesCancelled(const std::vector<Touch *> &touches, cocos2d::Eve
     
 }
 
-void Board::addChild(cocos2d::Node *child)
+void Board::addChild(Item *child)
 {
     int count = getChildrenCount();
     Vec2 pos = Vec2::ZERO;
@@ -255,10 +284,11 @@ void Board::addChild(cocos2d::Node *child)
     }
     if (child!=_pShadowItem)
     {
-        _itemList.pushBack((Item*)child);
+        _itemList.pushBack(child);
     }
     child->setPosition(pos);
     Node::addChild(child);
+    _stringList.push_back(child->getStringValue());
 }
 
 
@@ -280,7 +310,7 @@ void Board::resetItemPosition()
     for (int i=0; i<getChildrenCount(); i++)
     {
         auto node = getChildren().at(i);
-        if ( node == _pMenu)
+        if ( node == _pMenu || i >_posList.size())
         {
             continue;
         }
@@ -288,6 +318,7 @@ void Board::resetItemPosition()
         item->stopAllActions();
         itemMoveTo(item, _posList.at(i));
         _itemList.pushBack(item);
+        item->setStringValueWithColorChange(_stringList.at(i));
     }
     
 }
@@ -300,6 +331,25 @@ void Board::menuCallBack(cocos2d::Ref *sender)
             resetItemPosition();
             runAction(Sequence::create(DelayTime::create(0.2f),CallFunc::create(CC_CALLBACK_0(Board::resetItemPosition, this)), NULL));
             break;
+        case menuTag::COPY_OR_MOVE_TOGGLE:
+        {
+            auto toggleMenu = (MenuItemToggle*)sender;
+            int index = toggleMenu->getSelectedIndex();
+            _eMode = (mode)index;
+            switch (_eMode)
+            {
+                case mode::COPY:
+                    setColor(Color3B::YELLOW);
+                    break;
+                case mode::MOVE:
+                    setColor(Color3B::WHITE);
+                    break;
+                default:
+                    break;
+            }
+            
+        }
+            
         default:
             break;
     }
@@ -323,7 +373,7 @@ void Board::writeMappingFile()
                 result.append(_itemList.at(index)->getStringValue());
                 if (k<11)
                 {
-                    result.append(",\t");                    
+                    result.append(",\t");
                 }
                 index++;
             }
