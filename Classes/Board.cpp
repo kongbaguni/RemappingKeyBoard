@@ -30,9 +30,9 @@ _eMode(mode::MOVE)
     for (int i=1; i>=0; i--)
     {
         float x = 420+32*i;
-        for (int j=7; j>=0; j--)
+        for (int j=15; j>=0; j--)
         {
-            float y = j*16+192;
+            float y = j*16+ 16;
             _posList.push_back(Vec2(x, y));
             
         }
