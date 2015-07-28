@@ -107,8 +107,10 @@ void Board::showMenu()
             
             
             _pMenu = Menu::create(resetBtn, copyMoveToggle, NULL);
+            _pMenu->retain();
             _pMenu->alignItemsHorizontally();
             Node::addChild(_pMenu,10,10);
+            
         }
     }
     
