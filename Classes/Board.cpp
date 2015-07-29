@@ -417,6 +417,11 @@ void Board::writeMappingFile()
                 index++;
             }
             result.append("}");
+            if (j<3)
+            {
+                result.append(",");
+                
+            }
         }
         result.append("\n},");
         index2++;
