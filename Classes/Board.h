@@ -31,7 +31,8 @@ protected:
     enum class menuTag
     {
         RESET,
-        COPY_OR_MOVE_TOGGLE
+        COPY_OR_MOVE_TOGGLE,
+        SAVE_AS_DEFALT
     };
     
     enum class mode
@@ -84,6 +85,8 @@ private:
     
     void writeMappingFile();
     
+    
+    void setSettingAsDefalt();
 };
 
 #endif /* defined(__Remapping__Board__) */

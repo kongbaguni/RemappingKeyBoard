@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <json/document.h>
+#include "MainScene.h"
 
 Board::Board():
 _pSelectItem(nullptr),
@@ -96,19 +97,22 @@ void Board::showMenu()
         {
             auto callBack = CC_CALLBACK_1(Board::menuCallBack, this);
             auto resetBtn =
-            MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "reset"), callBack);
+            MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "[reset]"), callBack);
             resetBtn->setTag((int)menuTag::RESET);
             
-            auto copyBtn = MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "copy"), callBack);
-            auto moveBtm = MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "move"), callBack);
+            auto copyBtn = MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "[copy]"), callBack);
+            auto moveBtm = MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "[move]"), callBack);
             
             auto copyMoveToggle = MenuItemToggle::createWithCallback(callBack, moveBtm, copyBtn, NULL);
             copyMoveToggle->setTag((int)menuTag::COPY_OR_MOVE_TOGGLE);
             
             
-            _pMenu = Menu::create(resetBtn, copyMoveToggle, NULL);
+            auto saveAsDefalt = MenuItemLabel::create(Label::createWithBMFont("fonts/bmfont.fnt", "[save as defalt]"), callBack);
+            saveAsDefalt->setTag((int)menuTag::SAVE_AS_DEFALT);
+            
+            _pMenu = Menu::create(copyMoveToggle, resetBtn, saveAsDefalt, NULL);
             _pMenu->retain();
-            _pMenu->alignItemsHorizontally();
+            _pMenu->alignItemsHorizontallyWithPadding(10);
             Node::addChild(_pMenu,10,10);
             
         }
@@ -382,7 +386,12 @@ void Board::menuCallBack(cocos2d::Ref *sender)
             }
             
         }
-            
+            break;
+        case menuTag::SAVE_AS_DEFALT:
+        {
+            setSettingAsDefalt();
+        }
+            break;
         default:
             break;
     }
@@ -455,4 +464,11 @@ void Board::writeMappingFile()
         file.close();
     }
 
+}
+
+
+void Board::setSettingAsDefalt()
+{
+    Director::getInstance()->replaceScene(TransitionPageTurn::create(1.0f, MainScene::createScene(), true));
+    
 }
